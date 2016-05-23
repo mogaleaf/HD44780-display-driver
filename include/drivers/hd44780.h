@@ -44,26 +44,66 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 				functionSet |=Display_Function::D_MATRICE_5_11;
 			}
 			IssueCommand(Mode::FUNCTION_SET, functionSet);
-         
+            Clear();
+            SetDirection(true, false);
+            SetDisplay(true, true, false);
 		}
 		
 		 void SetDisplay(bool display, bool visibleCursor, bool blinkCursor)
 		{
-			uint8_t args = 0;
 			if (display)
 			{
-				args |= Display_Control::DISPLAY_ON;
-			}
+                currentDisplay |= Display_Control::DISPLAY_ON;
+            }
+            else {
+                currentDisplay &= ~Display_Control::DISPLAY_ON;
+            }
 			if (visibleCursor)
 			{
-				args |= Display_Control::CURSOR_VISIBLE;
+                currentDisplay |= Display_Control::CURSOR_VISIBLE;
 			}
+            else {
+                currentDisplay &= ~Display_Control::CURSOR_VISIBLE;
+            }
 			if (blinkCursor)
 			{
-				args |= Display_Control::BLINK_CURSOR;
-			}
-			IssueCommand(Commands::DISPLAY_CONTROL, args);
+                currentDisplay |= Display_Control::BLINK_CURSOR;
+            }
+            else {
+                currentDisplay |= Display_Control::BLINK_CURSOR;
+            }
+			IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
 		}
+
+         void ShowText() {
+             currentDisplay |= Display_Control::DISPLAY_ON;
+             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+         }
+
+         void HideText() {
+             currentDisplay &= ~Display_Control::DISPLAY_ON;
+             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+         }
+
+         void ShowCursor() {
+             currentDisplay |= Display_Control::CURSOR_VISIBLE;
+             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+         }
+
+         void HideCursor() {
+             currentDisplay &= ~Display_Control::CURSOR_VISIBLE;
+             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+         }
+
+         void BlinkCursor() {
+             currentDisplay |= Display_Control::BLINK_CURSOR;
+             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+         }
+
+         void StaticCursor() {
+             currentDisplay &= ~Display_Control::BLINK_CURSOR;
+             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+         }
 		
 		 void Clear() {
 			IssueCommand(Commands::CLEAR_DISPLAY);
@@ -71,6 +111,13 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
             row = 1;
 			os_delay_us(2000);
 		}
+
+         void Home() {
+             IssueCommand(Commands::RETURN_HOME);
+             col = 0;
+             row = 1;
+             os_delay_us(2000);
+         }
 
          void SetDirection(bool writeRight,bool shiftAdress) {
             uint8_t args = 0;
@@ -151,6 +198,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 
         uint8_t col = 0;
         uint8_t row = 0;
+        uint8_t currentDisplay = 0;
 
         void ChangeRow() {
             if (lineNumber > 1) {
