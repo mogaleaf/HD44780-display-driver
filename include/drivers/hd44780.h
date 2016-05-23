@@ -107,15 +107,15 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 		
 		 void Clear() {
 			IssueCommand(Commands::CLEAR_DISPLAY);
-            col = 0;
-            row = 1;
+            currentCol = 0;
+            currentRow = 0;
 			os_delay_us(2000);
 		}
 
          void Home() {
              IssueCommand(Commands::RETURN_HOME);
-             col = 0;
-             row = 1;
+             currentCol = 0;
+             currentRow = 0;
              os_delay_us(2000);
          }
 
@@ -132,30 +132,30 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
         }
 
          void DisplayDigit(char character) {
-             if (col >= colSize) {
+             if (currentCol >= colSize) {
                  ChangeRow();
              }
              RS::set();
              Write(character);
-             col++;
+             currentCol++;
         }
 
          void DisplayDigit(uint8_t colNumber, uint8_t rowNumber, char character) {
              SetCursor(colNumber, rowNumber);
              RS::set();
              Write(character);
-             col++;
+             currentCol++;
          }
 
          void SetCursor(uint8_t colNumber, uint8_t rowNumber) {
              uint8_t args = 0;
              if (rowNumber > 0) {
-                 args = 0x40;
+                 args = row_addresses[rowNumber];
              }
              args += colNumber;
              IssueCommand(Mode::SET_DDRAMADDR, args);
-             col = colNumber;
-             row = rowNumber;
+             currentCol = colNumber;
+             currentRow = rowNumber;
          }
 		
 	private:
@@ -196,27 +196,23 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
         };
 		
 
-        uint8_t col = 0;
-        uint8_t row = 0;
+        uint8_t currentCol = 0;
+        uint8_t currentRow = 0;
         uint8_t currentDisplay = 0;
+        uint8_t row_addresses[lineNumber];
 
         void ChangeRow() {
-            if (lineNumber > 1) {
-                if (row == 0) {
-                    SetCursor(0, 1);
-                    row = 1;
-                    col = 0;
-                }
-                else {
-                    SetCursor(0, 0);
-                    row = 0;
-                    col = 0;
-                }
+            if ((currentRow+1) < lineNumber) {
+                SetCursor(currentRow++, currentCol);
             }
             else {
                 SetCursor(0, 0);
-                row = 0;
-                col = 0;
+            }
+        }
+
+        void InitAddresses() {
+            for (auto i = 0; i < lineNumber; i++) {
+                row_addresses[i] = colSize * (i / 2) + 0x40 * (i % 2);
             }
         }
 
