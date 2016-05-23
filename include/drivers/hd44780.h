@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 
+namespace etl {
 //mode 4 pins pour le moment
 template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, typename D7, uint8_t lineNumber, uint8_t colSize>
 	class HD44780 {
@@ -12,7 +13,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 
 		 void init() {
 
-            InitAddresses();
+            initAddresses();
 
 			RS::setOutput();
 			ENABLE::setOutput();
@@ -27,32 +28,32 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 			ENABLE::clear();
 			
 			// Only for 4 bits mode
-			Write(0x03);
+			write(0x03);
 			os_delay_us(4500);
-			Write(0x03);
+			write(0x03);
 			os_delay_us(4500);
-			Write(0x03);
+			write(0x03);
 			os_delay_us(150);
-			Write(0x02);
+			write(0x02);
 			
 			
 			uint8_t functionSet = 0;
 			if (lineNumber > 1)
 			{
-				functionSet |=Display_Function::D_TWO_LINES;
+				functionSet |= Display_Function::D_TWO_LINES;
 			}
 			if ((lineNumber == 1) && (colSize > 10))
 			{
-				functionSet |=Display_Function::D_MATRICE_5_11;
+				functionSet |= Display_Function::D_MATRICE_5_11;
                 dots5x11Matrice = true;
 			}
-			IssueCommand(Mode::FUNCTION_SET, functionSet);
-            Clear();
-            SetDirection(true, false);
-            SetDisplay(true, true, false);
+			issueCommand(Mode::FUNCTION_SET, functionSet);
+            clear();
+            setDirection(true, false);
+            setDisplay(true, true, false);
 		}
 		
-		 void SetDisplay(bool display, bool visibleCursor, bool blinkCursor)
+		 void setDisplay(bool display, bool visibleCursor, bool blinkCursor)
 		{
 			if (display)
 			{
@@ -75,56 +76,56 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
             else {
                 currentDisplay |= Display_Control::BLINK_CURSOR;
             }
-			IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+			issueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
 		}
 
-         void ShowText() {
+         void showText() {
              currentDisplay |= Display_Control::DISPLAY_ON;
              IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
          }
 
-         void HideText() {
+         void hideText() {
              currentDisplay &= ~Display_Control::DISPLAY_ON;
-             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+             issueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
          }
 
-         void ShowCursor() {
+         void showCursor() {
              currentDisplay |= Display_Control::CURSOR_VISIBLE;
-             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+             issueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
          }
 
-         void HideCursor() {
+         void hideCursor() {
              currentDisplay &= ~Display_Control::CURSOR_VISIBLE;
-             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+             issueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
          }
 
-         void BlinkCursor() {
+         void blinkCursor() {
              currentDisplay |= Display_Control::BLINK_CURSOR;
-             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+             issueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
          }
 
-         void StaticCursor() {
+         void staticCursor() {
              currentDisplay &= ~Display_Control::BLINK_CURSOR;
-             IssueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
+             issueCommand(Commands::DISPLAY_CONTROL, currentDisplay);
          }
 		
-		 void Clear() {
-			IssueCommand(Commands::CLEAR_DISPLAY);
+		 void clear() {
+			issueCommand(Commands::CLEAR_DISPLAY);
             currentCol = 0;
             currentRow = 0;
             ddRamddr = true;
 			os_delay_us(2000);
 		}
 
-         void Home() {
-             IssueCommand(Commands::RETURN_HOME);
+         void home() {
+             issueCommand(Commands::RETURN_HOME);
              currentCol = 0;
              currentRow = 0;
              ddRamddr = true;
              os_delay_us(2000);
          }
 
-         void SetDirection(bool writeRight,bool shiftAdress) {
+         void setDirection(bool writeRight,bool shiftAdress) {
             uint8_t args = 0;
             if (writeRight) {
                 args |= Display_Mode::DIRECTION;
@@ -133,39 +134,39 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
                 args |=Display_Mode::SHIFT;
             }
            
-            IssueCommand(Commands::ENTRY_MODE_SET, args);
+            issueCommand(Commands::ENTRY_MODE_SET, args);
         }
 
-         void Display(char character) {
+         void display(char character) {
              if (currentCol >= colSize) {
-                 ChangeRow();
+                 changeRow();
              }
              if (!ddRamddr) {
-                 SetCursor(currentCol, currentRow);
+                 setCursor(currentCol, currentRow);
              }
              RS::set();
-             Write(character);
+             write(character);
              currentCol++;
         }
 
 
-         void Display(uint8_t colNumber, uint8_t rowNumber, char character) {
-             SetCursor(colNumber, rowNumber);
+         void display(uint8_t colNumber, uint8_t rowNumber, char character) {
+             setCursor(colNumber, rowNumber);
              RS::set();
-             Write(character);
+             write(character);
              currentCol++;
          }
 
-         void SetCursor(uint8_t colNumber, uint8_t rowNumber) {
+         void setCursor(uint8_t colNumber, uint8_t rowNumber) {
              uint8_t args = row_addresses[rowNumber];
              args += colNumber;
-             IssueCommand(Mode::SET_DDRAMADDR, args);
+             issueCommand(Mode::SET_DDRAMADDR, args);
              currentCol = colNumber;
              currentRow = rowNumber;
              ddRamddr = true;
          }
 
-         void AddChar(uint8_t location, uint8_t matrice[]) {
+         void addChar(uint8_t location, uint8_t matrice[]) {
              if (!dots5x11Matrice && location > 8) {
                  location = 8;
              }
@@ -173,11 +174,11 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
                  location = 4;
              }
              ddRamddr = false;
-             IssueCommand(Mode::SET_CGRAMADDR, location << 3);
+             issueCommand(Mode::SET_CGRAMADDR, location << 3);
              auto length = dots5x11Matrice ? 11 : 8;
              RS::set();
              for (auto i = 0; i < length; i++) {
-                 Write(matrice[i]);
+                 write(matrice[i]);
              }
          }
 		
@@ -226,53 +227,53 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
         bool ddRamddr = false;
         bool dots5x11Matrice = false;
 
-        void ChangeRow() {
+        void changeRow() {
             if ((currentRow+1) < lineNumber) {
                 currentRow++;
-                SetCursor(0, currentRow );
+                setCursor(0, currentRow );
             }
             else {
-                SetCursor(0, 0);
+                setCursor(0, 0);
             }
         }
 
-        void InitAddresses() {
+        void initAddresses() {
             for (auto i = 0; i < lineNumber; i++) {
                 row_addresses[i] = colSize * (i / 2) + 0x40 * (i % 2);
             }
         }
 
-		 void IssueCommand(Mode mode, uint8_t arg) {
+		 void issueCommand(Mode mode, uint8_t arg) {
             RS::clear();
-			Write(mode | arg);
+			write(mode | arg);
 		}
 		
-		 void IssueCommand(Commands command) {
+		 void issueCommand(Commands command) {
             RS::clear();
-			Write(command);
+			write(command);
 		}
 		
-		 void IssueCommand(Commands command,uint8_t arg) {
+		 void issueCommand(Commands command,uint8_t arg) {
             RS::clear();
-			Write(command | arg);
+			write(command | arg);
 		}
 
-		 void Write(uint8_t data) {
+		 void write(uint8_t data) {
 			D4::set(((1 << 4)&data) != 0 );
 			D5::set(((1 << 5)&data) != 0);
 			D6::set(((1 << 6)&data) != 0);
 			D7::set(((1 << 7)&data) != 0);
 			//ENABLE::pulseHigh();
-			PulseEnable();
+			pulseEnable();
 			D4::set(((1 << 0)&data) != 0);
 			D5::set(((1 << 1)&data) != 0);
 			D6::set(((1 << 2)&data) != 0);
 			D7::set(((1 << 3)&data) != 0);
 			//ENABLE::pulseHigh();
-			PulseEnable();
+			pulseEnable();
 		}
 		
-		 void PulseEnable() {
+		 void pulseEnable() {
 			ENABLE::clear();
 			os_delay_us(1);  
 			ENABLE::set();
@@ -287,7 +288,8 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
     public:
         static void print(HD44780& h,const char str[]) {
             for (auto i = 0; str[i] != '\0'; i++) {
-                h.Display(str[i]);
+                h.display(str[i]);
             }
         }
     };
+}
