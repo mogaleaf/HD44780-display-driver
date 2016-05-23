@@ -136,7 +136,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
             IssueCommand(Commands::ENTRY_MODE_SET, args);
         }
 
-         void DisplayDigit(char character) {
+         void Display(char character) {
              if (currentCol >= colSize) {
                  ChangeRow();
              }
@@ -149,7 +149,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
         }
 
 
-         void DisplayDigit(uint8_t colNumber, uint8_t rowNumber, char character) {
+         void Display(uint8_t colNumber, uint8_t rowNumber, char character) {
              SetCursor(colNumber, rowNumber);
              RS::set();
              Write(character);
@@ -287,7 +287,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
     public:
         static void print(HD44780& h,const char str[]) {
             for (auto i = 0; str[i] != '\0'; i++) {
-                h.DisplayDigit(str[i]);
+                h.Display(str[i]);
             }
         }
     };
