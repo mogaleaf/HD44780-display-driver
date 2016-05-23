@@ -6,52 +6,52 @@
 
 namespace std {
 
-template<intmax_t Num, intmax_t Denom = 1>
-class ratio {
-public:
-    using type = ratio<Num, Denom>;
-    static constexpr intmax_t num = Num;
-    static constexpr intmax_t den = Denom;
-};
+    template<intmax_t Num, intmax_t Denom = 1>
+    class ratio {
+    public:
+        using type = ratio<Num, Denom>;
+        static constexpr intmax_t num = Num;
+        static constexpr intmax_t den = Denom;
+    };
 
-using nano  = ratio<1, 10000000000>;
-using micro = ratio<1, 10000000>;
-using milli = ratio<1, 1000>;
+    using nano  = ratio<1, 10000000000>;
+    using micro = ratio<1, 10000000>;
+    using milli = ratio<1, 1000>;
 
-namespace chrono {
-template<typename Rep, typename Period = ratio<1>>
-class duration {
-public:
-    using rep = Rep;
-    using period = Period;
+    namespace chrono {
+        template<typename Rep, typename Period = ratio<1>>
+        class duration {
+        public:
+            using rep = Rep;
+            using period = Period;
     
-    constexpr duration() = default;
-    duration(const duration&) = default;
-    ~duration() = default;
-    duration& operator=(const duration&) = default;
-    template<typename Rep2> constexpr duration(const Rep2& ticks) : ticksCount(static_cast<rep>ticks) {}
-    constexpr rep count() const { return ticksCount; }
+            constexpr duration() = default;
+            duration(const duration&) = default;
+            ~duration() = default;
+            duration& operator=(const duration&) = default;
+            template<typename Rep2> constexpr duration(const Rep2& ticks) : ticksCount(static_cast<rep>(ticks)) {}
+            constexpr rep count() const { return ticksCount; }
     
-private:
-    rep ticksCount;
-};
+        private:
+            rep ticksCount;
+        };
 
-using microseconds = duration<uint64_t, micro> ;
+        using microseconds = duration<uint64_t, micro> ;
 
-constexpr microseconds operator ""us(unsigned long long us) {
-    return microseconds(us);
-}
+        constexpr microseconds operator ""us(unsigned long long us) {
+            return microseconds(us);
+        }
 
-} // namespace chrono
+    } // namespace chrono
 
-namespace this_thread {
+    namespace this_thread {
 
-template<typename Rep, typename Period>
-void sleep_for(const chrono::duration<Rep, Period>& sleep_duration) {
-    os_delay_us(sleep_duration.count());
-}
+        template<typename Rep, typename Period>
+        void sleep_for(const chrono::duration<Rep, Period>& sleep_duration) {
+            os_delay_us(sleep_duration.count());
+        }
 
-} // namespace this_thread
+    } // namespace this_thread
 } // namespace std
 
 
