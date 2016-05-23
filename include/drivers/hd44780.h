@@ -3,10 +3,14 @@
 #include <string>
 
 //mode 4 pins pour le moment
-template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, typename D7, uint8_t lineNumber, uint8_t dotsize>
+template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, typename D7, uint8_t lineNumber, uint8_t colSize>
 	class HD44780 {
 	public:
-		static void init() {
+
+        HD44780() {
+        }
+
+		 void init() {
 			
 			RS::setOutput();
 			ENABLE::setOutput();
@@ -35,7 +39,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 			{
 				functionSet |=Display_Function::D_TWO_LINES;
 			}
-			if ((lineNumber == 1) && (dotsize > 10))
+			if ((lineNumber == 1) && (colSize > 10))
 			{
 				functionSet |=Display_Function::D_MATRICE_5_11;
 			}
@@ -43,7 +47,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
          
 		}
 		
-		static void SetDisplay(bool display, bool visibleCursor, bool blinkCursor)
+		 void SetDisplay(bool display, bool visibleCursor, bool blinkCursor)
 		{
 			uint8_t args = 0;
 			if (display)
@@ -61,12 +65,14 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 			IssueCommand(Commands::DISPLAY_CONTROL, args);
 		}
 		
-		static void Clear() {
+		 void Clear() {
 			IssueCommand(Commands::CLEAR_DISPLAY);
+            col = 0;
+            row = 1;
 			os_delay_us(2000);
 		}
 
-        static void SetDirection(bool writeRight,bool shiftAdress) {
+         void SetDirection(bool writeRight,bool shiftAdress) {
             uint8_t args = 0;
             if (writeRight) {
                 args |= Display_Mode::DIRECTION;
@@ -78,10 +84,32 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
             IssueCommand(Commands::ENTRY_MODE_SET, args);
         }
 
-        static void DisplayDigit(char character) {
-            RS::set();
-            Write(character);
+         void DisplayDigit(char character) {
+             if (col >= colSize) {
+                 ChangeRow();
+             }
+             RS::set();
+             Write(character);
+             col++;
         }
+
+         void DisplayDigit(uint8_t colNumber, uint8_t rowNumber, char character) {
+             SetCursor(colNumber, rowNumber);
+             RS::set();
+             Write(character);
+             col++;
+         }
+
+         void SetCursor(uint8_t colNumber, uint8_t rowNumber) {
+             uint8_t args = 0;
+             if (rowNumber > 0) {
+                 args = 0x40;
+             }
+             args += colNumber;
+             IssueCommand(Mode::SET_DDRAMADDR, args);
+             col = colNumber;
+             row = rowNumber;
+         }
 		
 	private:
 		enum Commands:uint8_t {
@@ -120,22 +148,46 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
             SHIFT = 0x01
         };
 		
-		static void IssueCommand(Mode mode, uint8_t arg) {
+
+        uint8_t col = 0;
+        uint8_t row = 0;
+
+        void ChangeRow() {
+            if (lineNumber > 1) {
+                if (row == 0) {
+                    SetCursor(0, 1);
+                    row = 1;
+                    col = 0;
+                }
+                else {
+                    SetCursor(0, 0);
+                    row = 0;
+                    col = 0;
+                }
+            }
+            else {
+                SetCursor(0, 0);
+                row = 0;
+                col = 0;
+            }
+        }
+
+		 void IssueCommand(Mode mode, uint8_t arg) {
             RS::clear();
 			Write(mode | arg);
 		}
 		
-		static void IssueCommand(Commands command) {
+		 void IssueCommand(Commands command) {
             RS::clear();
 			Write(command);
 		}
 		
-		static void IssueCommand(Commands command,uint8_t arg) {
+		 void IssueCommand(Commands command,uint8_t arg) {
             RS::clear();
 			Write(command | arg);
 		}
 
-		static void Write(uint8_t data) {
+		 void Write(uint8_t data) {
 			D4::set(((1 << 4)&data) != 0 );
 			D5::set(((1 << 5)&data) != 0);
 			D6::set(((1 << 6)&data) != 0);
@@ -150,7 +202,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 			PulseEnable();
 		}
 		
-		static void PulseEnable() {
+		 void PulseEnable() {
 			ENABLE::clear();
 			os_delay_us(1);  
 			ENABLE::set();
@@ -164,8 +216,9 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
     class HD44780Printer {
     public:
         static void print(const char str[]) {
+            HD44780 h;
             for (auto i = 0; str[i] != '\0'; i++) {
-                HD44780::DisplayDigit(str[i]);
+                h.DisplayDigit(str[i]);
             }
         }
     };
