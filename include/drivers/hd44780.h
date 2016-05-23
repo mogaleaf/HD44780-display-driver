@@ -175,6 +175,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
              ddRamddr = false;
              IssueCommand(Mode::SET_CGRAMADDR, location << 3);
              auto length = dots5x11Matrice ? 11 : 8;
+             RS::set();
              for (auto i = 0; i < length; i++) {
                  Write(matrice[i]);
              }
@@ -284,8 +285,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
     template <typename HD44780>
     class HD44780Printer {
     public:
-        static void print(const char str[]) {
-            HD44780 h;
+        static void print(HD44780& h,const char str[]) {
             for (auto i = 0; str[i] != '\0'; i++) {
                 h.DisplayDigit(str[i]);
             }
