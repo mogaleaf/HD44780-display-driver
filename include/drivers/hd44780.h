@@ -11,7 +11,9 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
         }
 
 		 void init() {
-			
+
+            InitAddresses();
+
 			RS::setOutput();
 			ENABLE::setOutput();
 			D4::setOutput();
@@ -42,6 +44,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 			if ((lineNumber == 1) && (colSize > 10))
 			{
 				functionSet |=Display_Function::D_MATRICE_5_11;
+                dots5x11Matrice = true;
 			}
 			IssueCommand(Mode::FUNCTION_SET, functionSet);
             Clear();
@@ -109,6 +112,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
 			IssueCommand(Commands::CLEAR_DISPLAY);
             currentCol = 0;
             currentRow = 0;
+            ddRamddr = true;
 			os_delay_us(2000);
 		}
 
@@ -116,6 +120,7 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
              IssueCommand(Commands::RETURN_HOME);
              currentCol = 0;
              currentRow = 0;
+             ddRamddr = true;
              os_delay_us(2000);
          }
 
@@ -135,10 +140,14 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
              if (currentCol >= colSize) {
                  ChangeRow();
              }
+             if (!ddRamddr) {
+                 SetCursor(currentCol, currentRow);
+             }
              RS::set();
              Write(character);
              currentCol++;
         }
+
 
          void DisplayDigit(uint8_t colNumber, uint8_t rowNumber, char character) {
              SetCursor(colNumber, rowNumber);
@@ -148,14 +157,27 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
          }
 
          void SetCursor(uint8_t colNumber, uint8_t rowNumber) {
-             uint8_t args = 0;
-             if (rowNumber > 0) {
-                 args = row_addresses[rowNumber];
-             }
+             uint8_t args = row_addresses[rowNumber];
              args += colNumber;
              IssueCommand(Mode::SET_DDRAMADDR, args);
              currentCol = colNumber;
              currentRow = rowNumber;
+             ddRamddr = true;
+         }
+
+         void AddChar(uint8_t location, uint8_t matrice[]) {
+             if (!dots5x11Matrice && location > 8) {
+                 location = 8;
+             }
+             else if (dots5x11Matrice && location > 4) {
+                 location = 4;
+             }
+             ddRamddr = false;
+             IssueCommand(Mode::SET_CGRAMADDR, location << 3);
+             auto length = dots5x11Matrice ? 11 : 8;
+             for (auto i = 0; i < length; i++) {
+                 Write(matrice[i]);
+             }
          }
 		
 	private:
@@ -200,10 +222,13 @@ template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, t
         uint8_t currentRow = 0;
         uint8_t currentDisplay = 0;
         uint8_t row_addresses[lineNumber];
+        bool ddRamddr = false;
+        bool dots5x11Matrice = false;
 
         void ChangeRow() {
             if ((currentRow+1) < lineNumber) {
-                SetCursor(currentRow++, currentCol);
+                currentRow++;
+                SetCursor(0, currentRow );
             }
             else {
                 SetCursor(0, 0);
