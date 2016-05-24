@@ -14,8 +14,8 @@ public:
     static constexpr intmax_t den = Denom;
 };
 
-using nano  = ratio<1, 10000000000>;
-using micro = ratio<1, 10000000>;
+using nano  = ratio<1, 1000000000>;
+using micro = ratio<1, 1000000>;
 using milli = ratio<1, 1000>;
 
 namespace chrono {
@@ -29,7 +29,7 @@ public:
     duration(const duration&) = default;
     ~duration() = default;
     duration& operator=(const duration&) = default;
-    template<typename Rep2> constexpr duration(const Rep2& ticks) : ticksCount(static_cast<rep>ticks) {}
+    template<typename Rep2> constexpr duration(const Rep2& ticks) : ticksCount(static_cast<rep>(ticks)) {}
     constexpr rep count() const { return ticksCount; }
     
 private:
