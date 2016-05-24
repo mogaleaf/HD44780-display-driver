@@ -14,9 +14,23 @@ public:
     static constexpr intmax_t den = Denom;
 };
 
-using nano  = ratio<1, 1000000000>;
+using atto 	= ratio<1, 1000000000000000000>;
+using femto = ratio<1, 1000000000000000>;
+using pico 	= ratio<1, 1000000000000>;
+using nano 	= ratio<1, 1000000000>;
 using micro = ratio<1, 1000000>;
 using milli = ratio<1, 1000>;
+using centi = ratio<1, 100>;
+using deci 	= ratio<1, 10>;
+using deca 	= ratio<10, 1>;
+using hecto = ratio<100, 1>;
+using kilo 	= ratio<1000, 1>;
+using mega 	= ratio<1000000, 1>;
+using giga 	= ratio<1000000000, 1>;
+using tera 	= ratio<1000000000000, 1>;
+using peta 	= ratio<1000000000000000, 1>;
+using exa 	= ratio<1000000000000000000, 1>;
+
 
 namespace chrono {
 template<typename Rep, typename Period = ratio<1>>
@@ -41,15 +55,19 @@ using microseconds = duration<uint64_t, micro> ;
 constexpr microseconds operator ""us(unsigned long long us) {
     return microseconds(us);
 }
+	
+constexpr duration<long double, micro> operator ""us(long double us) {
+	return duration<long double, micro>(us);
+}
 
 } // namespace chrono
 
 namespace this_thread {
 
-template<typename Rep, typename Period>
-void sleep_for(const chrono::duration<Rep, Period>& sleep_duration) {
-    os_delay_us(sleep_duration.count());
-}
+    template<typename Rep, typename Period>
+    void sleep_for(const chrono::duration<Rep, Period>& sleep_duration) {
+        os_delay_us(sleep_duration.count());
+    }
 
 } // namespace this_thread
 } // namespace std
