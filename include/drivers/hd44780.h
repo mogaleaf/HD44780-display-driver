@@ -4,6 +4,7 @@
 
 
 
+#ifndef _WIN32
 namespace std {
 
 template<intmax_t Num, intmax_t Denom = 1>
@@ -72,6 +73,7 @@ namespace this_thread {
 } // namespace this_thread
 } // namespace std
 
+#endif 
 
 namespace etl {
 //mode 4 pins pour le moment
@@ -180,7 +182,7 @@ public:
         currentCol = 0;
         currentRow = 0;
         ddRamddr = true;
-		os_delay_us(2000);
+		std::this_thread::sleep_for(2000us);
 	}
 
     void home() {
@@ -188,7 +190,7 @@ public:
         currentCol = 0;
         currentRow = 0;
         ddRamddr = true;
-        os_delay_us(2000);
+	    std::this_thread::sleep_for(2000us);
     }
 
     void setDirection(bool writeRight,bool shiftAdress) {
@@ -341,11 +343,11 @@ private:
 		
     void pulseEnable() {
 		ENABLE::clear();
-		os_delay_us(1);  
+	    std::this_thread::sleep_for(1us);  
 		ENABLE::set();
-		os_delay_us(1);  
+	    std::this_thread::sleep_for(1us);  
 		ENABLE::clear();
-		os_delay_us(100);
+	    std::this_thread::sleep_for(100us);
 	}
 };
 
