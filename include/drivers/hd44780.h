@@ -1,10 +1,9 @@
 #pragma once
-#include <cstdint>
 #include <string>
 
 
 
-#ifndef _WIN32
+#ifdef ETS_FRC_TIMER1_INTR_ATTACH
 namespace std {
 
 template<intmax_t Num, intmax_t Denom = 1>
@@ -182,7 +181,7 @@ public:
         currentCol = 0;
         currentRow = 0;
         ddRamddr = true;
-		std::this_thread::sleep_for(2000us);
+		std::this_thread::sleep_for(std::chrono::microseconds(2000));
 	}
 
     void home() {
@@ -190,7 +189,7 @@ public:
         currentCol = 0;
         currentRow = 0;
         ddRamddr = true;
-	    std::this_thread::sleep_for(2000us);
+	    std::this_thread::sleep_for(std::chrono::microseconds(2000));
     }
 
     void setDirection(bool writeRight,bool shiftAdress) {
@@ -342,6 +341,7 @@ private:
 	}
 		
     void pulseEnable() {
+	    using namespace std::chrono;
 		ENABLE::clear();
 	    std::this_thread::sleep_for(1us);  
 		ENABLE::set();
