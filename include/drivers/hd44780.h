@@ -76,7 +76,7 @@ namespace this_thread {
 
 namespace etl {
 //mode 4 pins pour le moment
-template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, typename D7, uint8_t lineNumber, uint8_t colSize>
+template <typename RW, typename RS, typename ENABLE, typename D4, typename D5, typename D6, typename D7, uint8_t lineNumber, uint8_t colSize>
 class HD44780 {
 public:
 
@@ -94,19 +94,25 @@ public:
         D5::setOutput();
         D6::setOutput();
         D7::setOutput();
-			
-        sleep_for(650000us);
+        RW::setOutput();
+    
+        os_delay_us(45000);
+        //sleep_for(650000us);
 			
         RS::clear();
         ENABLE::clear();
-			
+        RW::clear();
+
         // Only for 4 bits mode
-        write(0x03);
-        sleep_for(4500us);
-        write(0x03);
-        sleep_for(4500us);
-        write(0x03);
-        sleep_for(150us);
+        writeInit(0x30);
+        os_delay_us(4500);
+        //sleep_for(4500us);
+        writeInit(0x30);
+        os_delay_us(100);
+        //sleep_for(4500us);
+        writeInit(0x30);
+        os_delay_us(150);
+        //sleep_for(150us);
         write(0x02);
 			
 			
@@ -313,16 +319,19 @@ private:
 		void issueCommand(Mode mode, uint8_t arg) {
         RS::clear();
 		write(mode | arg);
+        checkBusyFlag(2000);
 	}
 		
 		void issueCommand(Commands command) {
         RS::clear();
 		write(command);
+        checkBusyFlag(2000);
 	}
 		
 		void issueCommand(Commands command,uint8_t arg) {
         RS::clear();
 		write(command | arg);
+        checkBusyFlag(2000);
 	}
 
     void write(uint8_t data) {
@@ -339,16 +348,76 @@ private:
 		//ENABLE::pulseHigh();
 		pulseEnable();
 	}
+
+    void writeInit(uint8_t data) {
+        D4::set(((1 << 4)&data) != 0);
+        D5::set(((1 << 5)&data) != 0);
+        D6::set(((1 << 6)&data) != 0);
+        D7::set(((1 << 7)&data) != 0);
+        pulseEnable();
+    }
 		
     void pulseEnable() {
 	    using namespace std::chrono;
 		ENABLE::clear();
-	    std::this_thread::sleep_for(1us);  
+        os_delay_us(1);
+	    //std::this_thread::sleep_for(1us);  
 		ENABLE::set();
-	    std::this_thread::sleep_for(1us);  
+        os_delay_us(1);
+	    //std::this_thread::sleep_for(1us);  
 		ENABLE::clear();
-	    std::this_thread::sleep_for(100us);
+        os_delay_us(100);
+	    //std::this_thread::sleep_for(100us);
 	}
+
+    void checkBusyFlag(long long time) {
+        //os_delay_us(time);
+        RW::set();
+        RS::clear();
+        ENABLE::clear();
+        os_delay_us(40);
+        D7::setInput();
+        D6::setInput();
+        D5::setInput();
+        D4::setInput();
+
+        bool ok = false;
+        while (!ok) {
+           auto maLecture = 0;
+           ENABLE::set();
+           os_delay_us(10);
+           maLecture |= D7::read() << 7;
+           maLecture |= D6::read() << 6;
+           maLecture |= D5::read() << 5;
+           maLecture |= D4::read() << 4;
+           ENABLE::clear();
+           os_delay_us(10);
+           ENABLE::set();
+           os_delay_us(10);
+           maLecture |= D7::read() << 3;
+           maLecture |= D6::read() << 2;
+           maLecture |= D5::read() << 1;
+           maLecture |= D4::read() << 0;
+           ENABLE::clear();
+          
+           auto value = maLecture & (1 << 7);
+          
+           if (0 == value) { 
+                 ok = true;
+                 break;
+            } // Check busy bit.  If zero, no longer busy
+           os_delay_us(40);
+        }
+
+        D7::setOutput();
+        D6::setOutput();
+        D5::setOutput();
+        D4::setOutput();
+        RW::clear();
+
+    }
+
+   
 };
 
 template <typename HD44780>
