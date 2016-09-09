@@ -1,82 +1,14 @@
 #pragma once
-#include <string>
+//#include <string>
+#include <../libstd/include/thread>
+#include <../libstd/include/chrono>
 
-
-
-#ifdef ETS_FRC_TIMER1_INTR_ATTACH
-namespace std {
-
-template<intmax_t Num, intmax_t Denom = 1>
-class ratio {
-public:
-    using type = ratio<Num, Denom>;
-    static constexpr intmax_t num = Num;
-    static constexpr intmax_t den = Denom;
-};
-
-using atto 	= ratio<1, 1000000000000000000>;
-using femto = ratio<1, 1000000000000000>;
-using pico 	= ratio<1, 1000000000000>;
-using nano 	= ratio<1, 1000000000>;
-using micro = ratio<1, 1000000>;
-using milli = ratio<1, 1000>;
-using centi = ratio<1, 100>;
-using deci 	= ratio<1, 10>;
-using deca 	= ratio<10, 1>;
-using hecto = ratio<100, 1>;
-using kilo 	= ratio<1000, 1>;
-using mega 	= ratio<1000000, 1>;
-using giga 	= ratio<1000000000, 1>;
-using tera 	= ratio<1000000000000, 1>;
-using peta 	= ratio<1000000000000000, 1>;
-using exa 	= ratio<1000000000000000000, 1>;
-
-
-namespace chrono {
-template<typename Rep, typename Period = ratio<1>>
-class duration {
-public:
-    using rep = Rep;
-    using period = Period;
-    
-    constexpr duration() = default;
-    duration(const duration&) = default;
-    ~duration() = default;
-    duration& operator=(const duration&) = default;
-    template<typename Rep2> constexpr duration(const Rep2& ticks) : ticksCount(static_cast<rep>(ticks)) {}
-    constexpr rep count() const { return ticksCount; }
-    
-private:
-    rep ticksCount;
-};
-
-using microseconds = duration<uint64_t, micro> ;
-
-constexpr microseconds operator ""us(unsigned long long us) {
-    return microseconds(us);
-}
-	
-constexpr duration<long double, micro> operator ""us(long double us) {
-	return duration<long double, micro>(us);
-}
-
-} // namespace chrono
-
-namespace this_thread {
-
-    template<typename Rep, typename Period>
-    void sleep_for(const chrono::duration<Rep, Period>& sleep_duration) {
-        os_delay_us(sleep_duration.count());
-    }
-
-} // namespace this_thread
-} // namespace std
-
-#endif 
+using namespace std;
+using namespace chrono_literals;
 
 namespace etl {
 //mode 4 pins pour le moment
-template <typename RW, typename RS, typename ENABLE, typename D4, typename D5, typename D6, typename D7, uint8_t lineNumber, uint8_t colSize>
+template <typename RS, typename ENABLE, typename D4, typename D5, typename D6, typename D7, uint8_t lineNumber, uint8_t colSize>
 class HD44780 {
 public:
 
@@ -84,8 +16,6 @@ public:
     }
 
     void init() {
-        using namespace std::chrono;
-        using namespace std::this_thread;
         initAddresses();
 
         RS::setOutput();
@@ -94,25 +24,18 @@ public:
         D5::setOutput();
         D6::setOutput();
         D7::setOutput();
-        RW::setOutput();
-    
-        os_delay_us(45000);
-        //sleep_for(650000us);
+        std::this_thread::sleep_for(45ms);
 			
         RS::clear();
         ENABLE::clear();
-        RW::clear();
 
         // Only for 4 bits mode
         writeInit(0x30);
-        os_delay_us(4500);
-        //sleep_for(4500us);
+		std::this_thread::sleep_for(45ms);
         writeInit(0x30);
-        os_delay_us(100);
-        //sleep_for(4500us);
+		std::this_thread::sleep_for(1ms);
         writeInit(0x30);
-        os_delay_us(150);
-        //sleep_for(150us);
+	    std::this_thread::sleep_for(150us);
         write(0x02);
 			
 			
@@ -187,7 +110,7 @@ public:
         currentCol = 0;
         currentRow = 0;
         ddRamddr = true;
-		std::this_thread::sleep_for(std::chrono::microseconds(2000));
+	    std::this_thread::sleep_for(2000ms);
 	}
 
     void home() {
@@ -195,7 +118,7 @@ public:
         currentCol = 0;
         currentRow = 0;
         ddRamddr = true;
-	    std::this_thread::sleep_for(std::chrono::microseconds(2000));
+		 std::this_thread::sleep_for(2000ms);
     }
 
     void setDirection(bool writeRight,bool shiftAdress) {
@@ -319,19 +242,19 @@ private:
 		void issueCommand(Mode mode, uint8_t arg) {
         RS::clear();
 		write(mode | arg);
-        checkBusyFlag(2000);
+		std::this_thread::sleep_for(2ms);
 	}
 		
 		void issueCommand(Commands command) {
         RS::clear();
 		write(command);
-        checkBusyFlag(2000);
+		std::this_thread::sleep_for(2ms);
 	}
 		
 		void issueCommand(Commands command,uint8_t arg) {
         RS::clear();
 		write(command | arg);
-        checkBusyFlag(2000);
+		std::this_thread::sleep_for(2ms);
 	}
 
     void write(uint8_t data) {
@@ -339,13 +262,11 @@ private:
 		D5::set(((1 << 5)&data) != 0);
 		D6::set(((1 << 6)&data) != 0);
 		D7::set(((1 << 7)&data) != 0);
-		//ENABLE::pulseHigh();
 		pulseEnable();
 		D4::set(((1 << 0)&data) != 0);
 		D5::set(((1 << 1)&data) != 0);
 		D6::set(((1 << 2)&data) != 0);
 		D7::set(((1 << 3)&data) != 0);
-		//ENABLE::pulseHigh();
 		pulseEnable();
 	}
 
@@ -360,62 +281,12 @@ private:
     void pulseEnable() {
 	    using namespace std::chrono;
 		ENABLE::clear();
-        os_delay_us(1);
-	    //std::this_thread::sleep_for(1us);  
+		std::this_thread::sleep_for(1us);
 		ENABLE::set();
-        os_delay_us(1);
-	    //std::this_thread::sleep_for(1us);  
+        std::this_thread::sleep_for(1us);
 		ENABLE::clear();
-        os_delay_us(100);
-	    //std::this_thread::sleep_for(100us);
+        std::this_thread::sleep_for(1ms);
 	}
-
-    void checkBusyFlag(long long time) {
-        //os_delay_us(time);
-        RW::set();
-        RS::clear();
-        ENABLE::clear();
-        os_delay_us(40);
-        D7::setInput();
-        D6::setInput();
-        D5::setInput();
-        D4::setInput();
-
-        bool ok = false;
-        while (!ok) {
-           auto maLecture = 0;
-           ENABLE::set();
-           os_delay_us(10);
-           maLecture |= D7::read() << 7;
-           maLecture |= D6::read() << 6;
-           maLecture |= D5::read() << 5;
-           maLecture |= D4::read() << 4;
-           ENABLE::clear();
-           os_delay_us(10);
-           ENABLE::set();
-           os_delay_us(10);
-           maLecture |= D7::read() << 3;
-           maLecture |= D6::read() << 2;
-           maLecture |= D5::read() << 1;
-           maLecture |= D4::read() << 0;
-           ENABLE::clear();
-          
-           auto value = maLecture & (1 << 7);
-          
-           if (0 == value) { 
-                 ok = true;
-                 break;
-            } // Check busy bit.  If zero, no longer busy
-           os_delay_us(40);
-        }
-
-        D7::setOutput();
-        D6::setOutput();
-        D5::setOutput();
-        D4::setOutput();
-        RW::clear();
-
-    }
 
    
 };
