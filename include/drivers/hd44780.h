@@ -299,5 +299,11 @@ public:
             h.display(str[i]);
         }
     }
+	
+	 static void print(HD44780 *h,const char str[]) {
+		 for (auto i = 0; str[i] != '\0'; i++) {
+			 h->display(str[i]);
+		 }
+	 }
 };
 }
